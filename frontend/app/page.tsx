@@ -1,11 +1,18 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const [showConsent, setShowConsent] = useState(false);
+  const router = useRouter();
+  
   return (
     <div className="flex flex-col items-center justify-center min-h-[844px] w-[390px] mx-auto bg-white font-sans">
       {/* Logo */}
       <div className="w-full flex justify-end pt-8 pr-8">
-        <Image src="/picture/logo.png" alt="Logo" width={40} height={40} />
+        <Image src="/picture/logo.png" alt="Logo" width={40} height={49} />
       </div>
       {/* Content */}
       <main className="flex flex-col items-center justify-center flex-1 w-full px-6 pt-2 pb-8">
@@ -23,6 +30,7 @@ export default function Home() {
         {/* Main Button */}
         <button
           className="w-[320px] h-[64px] bg-[#7C2AE8] text-white text-2xl font-medium rounded-full mb-3 shadow-md hover:bg-[#6a23c8] transition-colors"
+          onClick={() => setShowConsent(true)}
         >
           เริ่มทำแบบประเมิน
         </button>
@@ -39,6 +47,42 @@ export default function Home() {
         </div>
         <div className="text-xs text-zinc-400 text-center mt-2">Produced by: Group 3-S</div>
       </main>
+
+      {/* Consent Popup Modal */}
+      {showConsent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-[280px] relative">
+            {/* Close Button */}
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+              onClick={() => setShowConsent(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            {/* Content */}
+            <div className="mt-2">
+              <ul className="text-sm text-gray-700 mb-6 space-y-3 list-disc pl-5 text-left">
+                <li>I understand that my voice will be recorded for research purposes.</li>
+                <li>My data will remain anonymous and be stored securely for academic use only.</li>
+                <li>I can withdraw from the study at any time without any penalty.</li>
+              </ul>
+            </div>
+
+            {/* Button */}
+            <button
+               className="w-full h-12 bg-[#7C2AE8] text-white text-base font-medium rounded-lg hover:bg-[#6a23c8] transition-colors"
+               onClick={() => {
+               setShowConsent(false);
+               router.push("/login");
+  }}
+            >
+              I AGREE & START
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
