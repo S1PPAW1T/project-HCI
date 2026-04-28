@@ -38,6 +38,10 @@ export default function Home() {
         <a
           href="#"
           className="text-[#4F46E5] text-base font-medium underline mb-8"
+          onClick={() => {
+               setShowConsent(false);
+               router.push("/login");
+          }}
         >
           [สำหรับผู้เชี่ยวชาญด้านภาษากรุณาคลิกที่นี่]
         </a>
