@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+
+# environment variables (สำคัญมาก)
+.env
+.env.*
+!.env.example
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# build / output
+dist/
+build/
+
+# temp files
+tmp/
+temp/
+uploads/
+
+# audio files (กันพลาด)
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.ogg
+
+# coverage
+coverage/
+
+# nodemon
+nodemon.json
+
+# misc
+*.local
