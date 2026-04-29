@@ -147,7 +147,7 @@ export default function TestStimuliPage() {
           <button
             className="px-6 py-2 bg-purple-200 text-purple-800 font-semibold rounded-lg mb-6 hover:bg-purple-300 transition-colors"
           >
-            Result Model 1
+            {currentPage === 2 ? "Result Model 1" : currentPage === 3 ? "Result Model 2" : "Result Model 3"}
           </button>
         )}
 
