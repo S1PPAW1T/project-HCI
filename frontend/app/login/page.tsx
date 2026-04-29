@@ -34,26 +34,28 @@ export default function LoginPage() {
       <main className="flex flex-col items-center justify-center flex-1 w-full px-6 pt-2 pb-8">
         <div className="space-y-6 w-full">
           {/* Informed Consent Section */}
-          <div>
-            <h2 className="text-xl font-bold text-black mb-4">
+          <div className='bg-[#F0F0F0] px-4 py-4 rounded-xl'>
+            <h2 className="text-xl font-bold text-black mb-4 text-center">
               Informed Consent
             </h2>
 
-            <ul className="space-y-3 text-sm text-zinc-700">
-              <li className="flex gap-3">
-                <span className="font-bold min-w-fit">Purpose:</span>
+            <ul className="space-y-5 text-sm text-black">
+              <li className="grid grid-cols-[90px_1fr] gap-4">
+                <span className="font-bold">Purpose:</span>
                 <span>
                   I understand that my voice will be recorded and used as primary data for this research study.
                 </span>
               </li>
-              <li className="flex gap-3">
-                <span className="font-bold min-w-fit">Privacy:</span>
+
+              <li className="grid grid-cols-[90px_1fr] gap-4">
+                <span className="font-bold">Privacy:</span>
                 <span>
                   My data will remain anonymous and be stored securely for academic purposes only.
                 </span>
               </li>
-              <li className="flex gap-3">
-                <span className="font-bold min-w-fit">Voluntary Participation:</span>
+
+              <li className="grid grid-cols-[90px_1fr] gap-4">
+                <span className="font-bold">Voluntary Participation:</span>
                 <span>
                   I acknowledge that I can withdraw from the study at any time without any penalty.
                 </span>
@@ -67,7 +69,7 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
-                className="w-5 h-5 mt-1 rounded border-2 border-purple-500 cursor-pointer"
+                className="w-5 h-5 mt-1 border-2 border-[##7C2AE8] accent-purple-600 cursor-pointer hover:scale-105"
               />
               <label htmlFor="consent" className="text-sm text-[#7018B3] cursor-pointer">
                 I have read and understood the terms and conditions
@@ -77,12 +79,12 @@ export default function LoginPage() {
           </div>
 
           {/* Participant Information Section */}
-          <div>
+          <div className=''>
             <h2 className="text-xl font-bold text-black mb-4">
               Participant Information
             </h2>
 
-            <p className="text-sm text-zinc-600 mb-6">
+            <p className="text-sm text-black mb-6">
               Please provide your information to proceed:
             </p>
 
@@ -100,10 +102,12 @@ export default function LoginPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="To protect your privacy, you may use a nickname or initials"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-purple-100 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
+                  className="w-full px-4 py-2 rounded-lg text-sm border border-purple-200 bg-purple-100 text-black placeholder-[#B47FDC] focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
                   required
                 />
+                <p className="text-xs text-[#B47FDC] mt-1">
+                  * To protect your privacy, you may use a nickname or initials
+                </p>
               </div>
 
               {/* Age Field */}
@@ -119,7 +123,7 @@ export default function LoginPage() {
                   type="number"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-purple-100 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
+                  className="w-full px-4 py-2 text-sm rounded-lg border border-purple-200 bg-purple-100 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
                   required
                 />
               </div>

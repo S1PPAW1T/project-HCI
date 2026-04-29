@@ -52,19 +52,19 @@ export default function TestStimuliPage() {
     
     return (
       <div className="flex gap-1 justify-center my-2 items-center px-4">
-        <span className="text-2xl">🎤</span>
+        <span className="text-xl px-2">👎</span>
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             onClick={() => handleStarRating(questionIndex, star)}
-            className={`text-xl transition-transform hover:scale-110 ${
-              star <= currentRating ? "text-yellow-400" : "text-gray-300"
+            className={`text-2xl px-2 transition-transform hover:scale-110 ${
+              star <= currentRating ? "text-purple-300" : "text-gray-300"
             }`}
           >
             ★
           </button>
         ))}
-        <span className="text-2xl">🎧</span>
+        <span className="text-xl px-2">👍</span>
       </div>
     );
   };
@@ -129,8 +129,8 @@ export default function TestStimuliPage() {
           </div>
 
           {/* Page Progress */}
-          <div>
-            <div className="text-sm font-semibold text-black mb-2">
+          <div className="flex flex-row items-center mb-2">
+            <div className="text-xs text-black min-w-fit px-4">
               Page {currentPage} of {totalPages}
             </div>
             <div className="w-full bg-gray-300 rounded-full h-2">
@@ -145,7 +145,7 @@ export default function TestStimuliPage() {
         {/* Result Model Button - Pages 2-4 */}
         {currentPage > 1 && (
           <button
-            className="px-6 py-2 bg-purple-200 text-purple-800 font-semibold rounded-lg mb-6 hover:bg-purple-300 transition-colors"
+            className="mr-auto text-lg text-purple-800 font-semibold rounded-lg mb-6 hover:bg-purple-300 transition-colors"
           >
             {currentPage === 2 ? "Result Model 1" : currentPage === 3 ? "Result Model 2" : "Result Model 3"}
           </button>
@@ -154,7 +154,7 @@ export default function TestStimuliPage() {
         {/* Text Content */}
         <div className="w-full max-w-sm mb-8">
           {currentPage === 1 ? (
-            <p className="text-sm text-black leading-relaxed text-justify">
+            <p className="text-m text-black leading-relaxed text-justify">
               {currentTask === 1 
                 ? "Last Thursday, I requested a new project task. My boss asked if the finished report was fixed and uploaded. Specifically, I processed the data twice to ensure the results were accurate. If the system crashes again, we might miss the deadline, and the entire business will suffer."
                 : currentTask === 2
@@ -202,9 +202,9 @@ export default function TestStimuliPage() {
             {/* Microphone Button - Page 1 Only */}
             <button
               onClick={handleMicrophoneClick}
-              className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center mb-8 hover:bg-gray-400 transition-colors shadow-lg"
+              className="w-48 h-48 rounded-full bg-gray-300 flex items-center justify-center mb-12 hover:bg-gray-400 transition-colors shadow-lg"
             >
-              <Image src="/picture/microphone.png" alt="Microphone" width={64} height={64} />
+              <Image src="/picture/microphone.png" alt="Microphone" width={84} height={84} />
             </button>
           </>
         )}
@@ -212,7 +212,7 @@ export default function TestStimuliPage() {
         {/* Next Button */}
         <button
           onClick={handleNext}
-          className="w-40 h-12 bg-[#7C2AE8] text-white text-lg font-semibold rounded-lg hover:bg-[#6a23c8] transition-colors shadow-lg"
+          className="ml-auto w-32 h-12 bg-[#7C2AE8] text-white text-m font-semibold rounded-lg hover:bg-[#6a23c8] transition-colors shadow-lg"
         >
           Next
         </button>
