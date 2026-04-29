@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [consent, setConsent] = useState(false);
@@ -18,6 +20,7 @@ export default function LoginPage() {
 
     setIsLoading(false);
     console.log("Form submitted:", { name, age, consent });
+    router.push("/test");
   };
 
   return (
