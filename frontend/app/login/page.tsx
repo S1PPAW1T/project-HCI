@@ -69,7 +69,7 @@ export default function LoginPage() {
                 onChange={(e) => setConsent(e.target.checked)}
                 className="w-5 h-5 mt-1 rounded border-2 border-purple-500 cursor-pointer"
               />
-              <label htmlFor="consent" className="text-sm text-zinc-700 cursor-pointer">
+              <label htmlFor="consent" className="text-sm text-[#7018B3] cursor-pointer">
                 I have read and understood the terms and conditions
                 <span className="text-red-500">*</span>
               </label>
