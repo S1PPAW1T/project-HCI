@@ -11,7 +11,7 @@ const audioSchema = new mongoose.Schema({
   },
   audioUrl: {
     type: String,
-    required: true,
+    required: false,
   },
   createdAt: {
     type: Date,

@@ -4,12 +4,22 @@ const cors = require("cors");
 const audioRoutes = require("./routes/audio.routes");
 const speechRoutes = require("./routes/speech.routes");
 const userRoutes = require("./routes/user.routes");
+const healthRoutes = require("./routes/health.routes");
 const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// Health check endpoint
+app.use("/api/health", healthRoutes);
 
 app.use("/api/audio", audioRoutes);
 app.use("/api/speech", speechRoutes);

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function TestStimuliPage() {
@@ -11,6 +11,17 @@ export default function TestStimuliPage() {
   const [transcribedText, setTranscribedText] = useState("");
   const [showThankYou, setShowThankYou] = useState(false);
   const [ratings, setRatings] = useState({});
+  
+  // Recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState("idle"); // idle, recording, uploaded, error
+  const [uploadError, setUploadError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Refs for recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const totalTasks = 5;
   const totalPages = 4;
@@ -22,7 +33,77 @@ export default function TestStimuliPage() {
     "I think my accent affected how well the system understood me."
   ];
 
-  const handleNext = () => {
+  // Check if user is logged in on component mount
+  useEffect(() => {
+    const sessionId = localStorage.getItem("audioSessionId");
+    if (!sessionId) {
+      router.push("/login");
+    }
+  }, [router]);
+
+  const handleMicrophoneClick = async () => {
+    try {
+      if (isRecording) {
+        // Stop recording
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+          mediaRecorderRef.current.stop();
+        }
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+        }
+        setIsRecording(false);
+        setRecordingStatus("idle");
+      } else {
+        // Start recording
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+        
+        const mediaRecorder = new MediaRecorder(stream);
+        audioChunksRef.current = []; // Clear previous recording
+
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorder.onstart = () => {
+          setIsRecording(true);
+          setRecordingStatus("recording");
+          setUploadError("");
+        };
+
+        mediaRecorder.onstop = () => {
+          setIsRecording(false);
+        };
+
+        mediaRecorder.start();
+        mediaRecorderRef.current = mediaRecorder;
+      }
+    } catch (error) {
+      console.error("Microphone error:", error);
+      setUploadError("Microphone access denied. Please allow microphone permission.");
+      setRecordingStatus("error");
+    }
+  };
+
+  const handleNext = async () => {
+    // Stop recording if still active
+    if (isRecording) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      setIsRecording(false);
+    }
+
+    // If on page 1 and task 1, upload audio
+    if (currentTask === 1 && currentPage === 1) {
+      await uploadAudio();
+      return; // Don't proceed until upload completes
+    }
+
+    // Normal navigation
     if (currentTask === totalTasks && currentPage === totalPages) {
       setShowThankYou(true);
     } else if (currentPage < totalPages) {
@@ -31,6 +112,67 @@ export default function TestStimuliPage() {
       setCurrentTask(currentTask + 1);
       setCurrentPage(1);
       setTranscribedText("");
+      setRecordingStatus("idle");
+      setUploadError("");
+    }
+  };
+
+  const uploadAudio = async () => {
+    if (audioChunksRef.current.length === 0) {
+      setUploadError("No recording to upload. Please record audio first.");
+      setRecordingStatus("error");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      const sessionId = localStorage.getItem("audioSessionId");
+      if (!sessionId) {
+        throw new Error("No active session. Please login again.");
+      }
+
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+      const formData = new FormData();
+      formData.append("id", sessionId);
+      formData.append("audio", audioBlob, `task${currentTask}.wav`);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const response = await fetch(`${apiUrl}/api/audio/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Upload failed");
+      }
+
+      console.log("Audio uploaded successfully:", data);
+      setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
+      setRecordingStatus("uploaded");
+
+      // Proceed to next page after successful upload
+      setTimeout(() => {
+        if (currentPage < totalPages) {
+          setCurrentPage(currentPage + 1);
+        } else if (currentTask < totalTasks) {
+          setCurrentTask(currentTask + 1);
+          setCurrentPage(1);
+          setRecordingStatus("idle");
+          setUploadError("");
+          audioChunksRef.current = [];
+        }
+      }, 1500);
+    } catch (error) {
+      console.error("Upload error:", error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      setUploadError(errorMsg);
+      setRecordingStatus("error");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -69,20 +211,6 @@ export default function TestStimuliPage() {
     );
   };
 
-  const handleMicrophoneClick = () => {
-    // Simulate speech-to-text conversion
-    const mockTranscriptions = {
-      1: "This is the transcribed text from the microphone recording for task one.",
-      2: "Speech to text conversion results are displayed here for task two.",
-      3: "The recorded audio has been converted to text format for task three.",
-      4: "This represents the transcribed content from the voice recording task four.",
-      5: "Audio transcription results are shown here for the final task five."
-    };
-    
-    setTranscribedText(mockTranscriptions[currentTask] || "");
-    console.log("Recording started and converted to text");
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-[390px] mx-auto bg-white font-sans">
       {/* Logo */}
@@ -113,8 +241,8 @@ export default function TestStimuliPage() {
             {/* Title */}
             <h1 className="text-3xl font-bold text-black mb-8">Test Stimuli</h1>
 
-        {/* Progress Bars */}
-        <div className="w-full max-w-sm mb-8">
+            {/* Progress Bars */}
+            <div className="w-full max-w-sm mb-8">
           {/* Task Progress */}
           <div className="mb-4">
             <div className="text-sm font-semibold text-black mb-2">
@@ -196,13 +324,44 @@ export default function TestStimuliPage() {
               <div className="text-xs font-semibold text-black mb-2">Please note:</div>
               <ul className="text-xs text-zinc-600 space-y-2 list-disc pl-5">
                 <li>If you press the microphone button again, the system will start a new recording and overwrite the previous one.</li>
+                <li>Click Next after recording to upload your audio.</li>
               </ul>
             </div>
+
+            {/* Status Messages */}
+            {recordingStatus === "recording" && (
+              <div className="w-full max-w-sm bg-red-100 p-3 rounded-lg mb-4 text-center">
+                <p className="text-sm text-red-800 font-semibold">🔴 Recording in progress...</p>
+              </div>
+            )}
+
+            {recordingStatus === "uploaded" && (
+              <div className="w-full max-w-sm bg-green-100 p-3 rounded-lg mb-4 text-center">
+                <p className="text-sm text-green-800 font-semibold">✓ Audio uploaded successfully!</p>
+              </div>
+            )}
+
+            {recordingStatus === "error" && (
+              <div className="w-full max-w-sm bg-red-100 p-3 rounded-lg mb-4 text-center">
+                <p className="text-sm text-red-800 font-semibold">✗ Error: {uploadError}</p>
+              </div>
+            )}
+
+            {isUploading && (
+              <div className="w-full max-w-sm bg-blue-100 p-3 rounded-lg mb-4 text-center">
+                <p className="text-sm text-blue-800 font-semibold">⏳ Uploading audio...</p>
+              </div>
+            )}
 
             {/* Microphone Button - Page 1 Only */}
             <button
               onClick={handleMicrophoneClick}
-              className="w-48 h-48 rounded-full bg-gray-300 flex items-center justify-center mb-12 hover:bg-gray-400 transition-colors shadow-lg"
+              disabled={isUploading}
+              className={`w-48 h-48 rounded-full flex items-center justify-center mb-12 transition-all shadow-lg ${
+                isRecording
+                  ? "bg-red-300 hover:bg-red-400"
+                  : "bg-gray-300 hover:bg-gray-400"
+              } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Image src="/picture/microphone.png" alt="Microphone" width={84} height={84} />
             </button>
@@ -212,9 +371,14 @@ export default function TestStimuliPage() {
         {/* Next Button */}
         <button
           onClick={handleNext}
-          className="ml-auto w-32 h-12 bg-[#7C2AE8] text-white text-m font-semibold rounded-lg hover:bg-[#6a23c8] transition-colors shadow-lg"
+          disabled={isUploading || (currentTask === 1 && currentPage === 1 && isRecording)}
+          className={`ml-auto w-32 h-12 bg-[#7C2AE8] text-white text-m font-semibold rounded-lg hover:bg-[#6a23c8] transition-colors shadow-lg ${
+            (isUploading || (currentTask === 1 && currentPage === 1 && isRecording))
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
         >
-          Next
+          {isUploading ? "Uploading..." : "Next"}
         </button>
           </>
         )}

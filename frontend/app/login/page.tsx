@@ -16,31 +16,45 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      console.log("Logging in to:", apiUrl);
+      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/user/login`,
+        `${apiUrl}/api/user/login`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name, age, consent }),
+          body: JSON.stringify({ 
+            name, 
+            age: parseInt(age, 10), // Convert to number
+            consent 
+          }),
         }
       );
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Login failed");
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Login failed: ${response.status}`);
       }
 
       const data = await response.json();
 
-      // Store user data in localStorage
-      localStorage.setItem("user", JSON.stringify({ name, age }));
+      // Store user data and ID in localStorage for use in audio upload
+      localStorage.setItem("audioSessionId", data.data.id);
+      localStorage.setItem("userInfo", JSON.stringify({
+        name: data.data.name,
+        age: data.data.age,
+      }));
 
       console.log("Login successful:", data);
       router.push("/test");
     } catch (error) {
       console.error("Login error:", error);
-      alert("Login failed. Please try again.");
+      alert("Login failed. Please try again.\n\nError: " + (error instanceof Error ? error.message : "Unknown error"));
       setIsLoading(false);
     }
   };
