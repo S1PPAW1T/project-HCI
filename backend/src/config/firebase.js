@@ -4,7 +4,7 @@ const serviceAccount = require("../../serviceAccountKey.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: "YOUR_BUCKET_NAME.appspot.com",
+  storageBucket: "hci-project-9fc9a.appspot.com",
 });
 
 const bucket = admin.storage().bucket();

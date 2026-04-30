@@ -1,4 +1,4 @@
-const Audio = require("../models/audio.model");
+const Audio = require("../models/user.model");
 const storageService = require("../services/storage.service");
 
 exports.uploadAudio = async (req, res, next) => {

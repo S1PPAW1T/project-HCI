@@ -1,17 +1,13 @@
-const OpenAI = require("openai");
-const { Readable } = require("stream");
+const express = require("express");
+const router = express.Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const upload = require("../middlewares/upload.middleware");
+const speechController = require("../controllers/speech.controller");
 
-exports.transcribeBuffer = async (buffer) => {
-  const stream = Readable.from(buffer);
+router.post(
+  "/transcribe",
+  upload.single("audio"),
+  speechController.speechToText,
+);
 
-  const response = await openai.audio.transcriptions.create({
-    file: stream,
-    model: "gpt-4o-transcribe",
-  });
-
-  return response.text;
-};
+module.exports = router;
