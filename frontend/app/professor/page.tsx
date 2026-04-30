@@ -26,16 +26,16 @@ export default function ProfessorPage() {
       </div>
 
       {/* Content */}
-      <main className="flex flex-col items-center justify-center flex-1 w-full px-6 pt-2 pb-8">
-        <div className="text-center mt-4">
+      <main className="flex flex-col items-center flex-1 w-full px-6 pt-2 pb-8">
+        <div className="mt-4">
           {/* Title */}
-          <div className="text-2xl font-bold text-black leading-tight mb-6">
+          <div className="text-2xl font-bold text-black text-center leading-tight mb-6">
             Instruction for Expert
           </div>
-
+        
           {/* Instructions - English */}
-          <div className="text-sm text-zinc-700 mb-6 max-w-xs mx-auto">
-            <p className="mb-4">
+          <div className="text-sm text-black mb-4 max-w-xs mx-auto mt-4">
+            <p>
               Please listen to the recording of each participant and rate their Clarity and Intelligibility. Focus on their pronunciation, word stress, and final consonants.
             </p>
             <p>
@@ -44,17 +44,17 @@ export default function ProfessorPage() {
           </div>
 
           {/* Instructions - Thai */}
-          <div className="text-sm text-zinc-600 mb-8 max-w-xs mx-auto">
+          <div className="text-sm text-black mb-8 max-w-xs mx-auto">
             <p>
               คำแนะนำ: โปรดฟังเสียงและประเมินความชัดเจน โดยเน้นการออกเสียง การสงค์หมายเหนือและเสียงที่ท้ายคำ คะแนนของท่านจะใช้ในการแบ่งกลุ่มผู้เข้าร่วมออกสู่กลุ่มสำเร็จการวิจัย
             </p>
           </div>
-
+          
           {/* Password Field */}
           <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-4">
-            <div className="w-full max-w-xs">
-              <label className="block text-sm font-medium text-zinc-700 mb-3 text-left">
-                fill the password
+            <div className="w-full max-w-xs mt-6">
+              <label className="block text-m font-medium text-black mb-3 text-left">
+                Fill the password
               </label>
               <input
                 type="password"
@@ -69,9 +69,9 @@ export default function ProfessorPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-24 h-10 bg-[#7C2AE8] text-white text-sm font-medium rounded-lg hover:bg-[#6a23c8] transition-colors disabled:opacity-50 mt-2 self-end mr-0"
+              className="w-20 h-10 bg-[#7C2AE8] text-white text-sm font-medium rounded-lg hover:bg-[#6a23c8] transition-colors disabled:opacity-50 mt-2 self-end mr-0"
             >
-              {isLoading ? "..." : "enter"}
+              {isLoading ? "..." : "Enter"}
             </button>
           </form>
         </div>
