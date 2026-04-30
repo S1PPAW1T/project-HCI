@@ -45,3 +45,5 @@ nodemon.json
 
 # misc
 *.local
+
+serviceAccountKey.json

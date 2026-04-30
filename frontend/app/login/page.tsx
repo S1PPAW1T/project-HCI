@@ -15,12 +15,34 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate submission delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/user/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name, age, consent }),
+        }
+      );
 
-    setIsLoading(false);
-    console.log("Form submitted:", { name, age, consent });
-    router.push("/test");
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const data = await response.json();
+
+      // Store user data in localStorage
+      localStorage.setItem("user", JSON.stringify({ name, age }));
+
+      console.log("Login successful:", data);
+      router.push("/test");
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
