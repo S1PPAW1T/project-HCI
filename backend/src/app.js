@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const audioRoutes = require("./routes/audio.routes");
 const speechRoutes = require("./routes/speech.routes");
@@ -11,6 +12,9 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files (for local audio uploads)
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Logging middleware
 app.use((req, res, next) => {
