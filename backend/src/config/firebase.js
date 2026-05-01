@@ -4,7 +4,7 @@ const serviceAccount = require("../../serviceAccountKey.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: "hci-project-9fc9a.appspot.com",
+  storageBucket: "hci-project-9fc9a.firebasestorage.app",
   databaseURL: "https://hci-project-9fc9a.firebaseio.com",
 });
 

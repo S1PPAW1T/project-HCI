@@ -35,11 +35,9 @@ exports.uploadToFirebase = async (file) => {
       stream.on("error", (error) => {
         console.error("❌ Firebase upload failed:", error.message);
         console.log("⚠️  Falling back to local storage...");
-        
+
         // Fallback to local storage
-        uploadToLocal(file, fileName)
-          .then(resolve)
-          .catch(reject);
+        uploadToLocal(file, fileName).then(resolve).catch(reject);
       });
 
       stream.on("finish", async () => {
@@ -53,10 +51,8 @@ exports.uploadToFirebase = async (file) => {
         } catch (err) {
           console.error("❌ Error making file public:", err.message);
           console.log("⚠️  Falling back to local storage...");
-          
-          uploadToLocal(file, fileName)
-            .then(resolve)
-            .catch(reject);
+
+          uploadToLocal(file, fileName).then(resolve).catch(reject);
         }
       });
 
