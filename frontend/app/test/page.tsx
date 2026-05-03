@@ -11,13 +11,99 @@ export default function TestStimuliPage() {
   const [transcribedText, setTranscribedText] = useState("");
   const [showThankYou, setShowThankYou] = useState(false);
   const [ratings, setRatings] = useState({});
+  const [audioUrl, setAudioUrl] = useState(""); // Store audio URL from Firebase
+  const [modelResults, setModelResults] = useState<{
+    google: string;
+    whisper: string;
+    deepgram: string;
+  } | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingStatus, setRecordingStatus] = useState("idle"); // idle, recording, uploaded, error
+  const [recordingStatus, setRecordingStatus] = useState("idle"); // idle, recording, recorded, uploaded, error
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  
+
+  const getTaskPrompt = () => {
+    if (currentTask === 1) {
+      return "Last Thursday, I requested a new project task. My boss asked if the finished report was fixed and uploaded. Specifically, I processed the data twice to ensure the results were accurate. If the system crashes again, we might miss the deadline, and the entire business will suffer.";
+    }
+    if (currentTask === 2) {
+      return "Please sit in the correct seat before we begin. I need to ship the sheep to the island by noon. It is a great opportunity to improve my leadership skills. If we slip on the floor, we might sleep in the hospital tonight.";
+    }
+    if (currentTask === 3) {
+      return "The photographer took many photographs for the biography section. We must evaluate the economic situation immediately. He was comfortable with the technology, but the delivery was delayed. It is necessary to communicate with the entire community.";
+    }
+    if (currentTask === 4) {
+      return "The strong structure of the bridge attracts many strangers. We brought three fresh fruits from the street market. It starts at eight o'clock sharp. Please don't forget to check the clocks and spring into action.";
+    }
+    if (currentTask === 5) {
+      return "I can't understand why he shouldn't accept the offer. Actually, specifically, it wasn't available yesterday. The quality of the product doesn't match the description. We mustn't ignore the problem, or it won't be solved easily.";
+    }
+    return "";
+  };
+
+  const normalizeWord = (text: string) => text.toLowerCase().replace(/^[^a-z0-9ก-๙]+|[^a-z0-9ก-๙]+$/gi, "");
+
+  const renderComparedText = (original: string, transcript: string) => {
+    const originalWords = original.split(/\s+/).map((word) => normalizeWord(word)).filter(Boolean);
+    const transcriptWords = transcript.split(/\s+/).map((word) => ({ raw: word, normalized: normalizeWord(word) })).filter((item) => item.normalized);
+
+    const m = originalWords.length;
+    const n = transcriptWords.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i += 1) {
+      for (let j = 1; j <= n; j += 1) {
+        if (originalWords[i - 1] === transcriptWords[j - 1].normalized) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    const matchedIndices = new Set<number>();
+    let i = m;
+    let j = n;
+    while (i > 0 && j > 0) {
+      if (originalWords[i - 1] === transcriptWords[j - 1].normalized) {
+        matchedIndices.add(j - 1);
+        i -= 1;
+        j -= 1;
+      } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+        i -= 1;
+      } else {
+        j -= 1;
+      }
+    }
+
+    return transcriptWords.map((word, index) => {
+      const isWrong = !matchedIndices.has(index);
+      return (
+        <span key={`${word.raw}-${index}`} className={isWrong ? "text-blue-900 font-semibold" : "text-black"}>
+          {word.raw}{" "}
+        </span>
+      );
+    });
+  };
+
+  const getModelTitle = () => {
+    if (currentPage === 2) return "Deepgram";
+    if (currentPage === 3) return "OpenAI Whisper";
+    if (currentPage === 4) return "Google Speech-to-Text";
+    return "";
+  };
+
+  const getModelResultText = () => {
+    if (!modelResults) return "Loading transcription... Please wait.";
+    if (currentPage === 2) return modelResults.deepgram;
+    if (currentPage === 3) return modelResults.whisper;
+    if (currentPage === 4) return modelResults.google;
+    return "";
+  };  
   // Refs for recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -41,6 +127,19 @@ export default function TestStimuliPage() {
     }
   }, [router]);
 
+  // Scroll to top when user navigates between pages or tasks
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [currentPage, currentTask]);
+
+  useEffect(() => {
+    if (currentPage === 1) {
+      setShowOriginal(false);
+    }
+  }, [currentPage]);
+
   const handleMicrophoneClick = async () => {
     try {
       if (isRecording) {
@@ -52,7 +151,7 @@ export default function TestStimuliPage() {
           streamRef.current.getTracks().forEach((track) => track.stop());
         }
         setIsRecording(false);
-        setRecordingStatus("idle");
+        setRecordingStatus("recorded");
       } else {
         // Start recording
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -85,6 +184,22 @@ export default function TestStimuliPage() {
     }
   };
 
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      const nextPage = currentPage - 1;
+      setCurrentPage(nextPage);
+
+      if (nextPage === 1) {
+        setRecordingStatus("idle");
+        setUploadError("");
+        setIsUploading(false);
+        setModelResults(null);
+        setTranscribedText("");
+        audioChunksRef.current = [];
+      }
+    }
+  };
+
   const handleNext = async () => {
     // Stop recording if still active
     if (isRecording) {
@@ -97,13 +212,13 @@ export default function TestStimuliPage() {
       setIsRecording(false);
     }
 
-    // If on page 1 and task 1, upload audio
-    if (currentTask === 1 && currentPage === 1) {
+    // If on page 1, upload audio (handles both task 1 upload and tasks 2-5 transcription)
+    if (currentPage === 1) {
       await uploadAudio();
       return; // Don't proceed until upload completes
     }
 
-    // Normal navigation
+    // Normal navigation for pages 2+
     if (currentTask === totalTasks && currentPage === totalPages) {
       setShowThankYou(true);
     } else if (currentPage < totalPages) {
@@ -114,6 +229,7 @@ export default function TestStimuliPage() {
       setTranscribedText("");
       setRecordingStatus("idle");
       setUploadError("");
+      setModelResults(null); // Reset model results for new task
     }
   };
 
@@ -136,6 +252,7 @@ export default function TestStimuliPage() {
       const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
       const formData = new FormData();
       formData.append("id", sessionId);
+      formData.append("task", currentTask.toString()); // Add task number
       formData.append("audio", audioBlob, `task${currentTask}.wav`);
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -151,7 +268,27 @@ export default function TestStimuliPage() {
       }
 
       console.log("Audio uploaded successfully:", data);
-      setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
+      
+      // Store the audio URL from Firebase if available
+      if (data.data.audioUrl) {
+        setAudioUrl(data.data.audioUrl);
+        localStorage.setItem(`audioUrl_task${currentTask}`, data.data.audioUrl);
+      }
+
+      // If transcription results are included, store them for display
+      if (data.data.models) {
+        setModelResults({
+          google: data.data.models.google,
+          whisper: data.data.models.whisper,
+          deepgram: data.data.models.deepgram,
+        });
+
+        // Show the Google result by default as the first model page
+        setTranscribedText(data.data.models.google);
+      } else if (currentTask === 1) {
+        setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
+      }
+      
       setRecordingStatus("uploaded");
 
       // Proceed to next page after successful upload
@@ -163,6 +300,7 @@ export default function TestStimuliPage() {
           setCurrentPage(1);
           setRecordingStatus("idle");
           setUploadError("");
+          setModelResults(null); // Reset model results for new task
           audioChunksRef.current = [];
         }
       }, 1500);
@@ -180,7 +318,7 @@ export default function TestStimuliPage() {
     router.push("/");
   };
 
-  const handleStarRating = (questionIndex, rating) => {
+  const handleStarRating = (questionIndex: number, rating: number) => {
     const ratingKey = `task${currentTask}_q${questionIndex}`;
     setRatings(prev => ({
       ...prev,
@@ -188,9 +326,9 @@ export default function TestStimuliPage() {
     }));
   };
 
-  const renderStars = (questionIndex) => {
+  const renderStars = (questionIndex: number) => {
     const ratingKey = `task${currentTask}_q${questionIndex}`;
-    const currentRating = ratings[ratingKey] || 0;
+    const currentRating = (ratings as Record<string, number>)[ratingKey] || 0;
     
     return (
       <div className="flex gap-1 justify-center my-2 items-center px-4">
@@ -272,37 +410,76 @@ export default function TestStimuliPage() {
 
         {/* Result Model Button - Pages 2-4 */}
         {currentPage > 1 && (
-          <button
-            className="mr-auto text-lg text-purple-800 font-semibold rounded-lg mb-6 hover:bg-purple-300 transition-colors"
-          >
-            {currentPage === 2 ? "Result Model 1" : currentPage === 3 ? "Result Model 2" : "Result Model 3"}
-          </button>
+          <div className="mr-auto mb-6">
+            <div className="flex flex-col gap-2">
+              <div>
+                <h2 className="text-lg text-purple-800 font-semibold">
+                  {getModelTitle()}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Model {currentPage - 1} of 3
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOriginal((prev) => !prev)}
+                className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                {showOriginal ? "Hide Original" : "Show Original"}
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Text Content */}
         <div className="w-full max-w-sm mb-8">
           {currentPage === 1 ? (
             <p className="text-m text-black leading-relaxed text-justify">
-              {currentTask === 1 
-                ? "Last Thursday, I requested a new project task. My boss asked if the finished report was fixed and uploaded. Specifically, I processed the data twice to ensure the results were accurate. If the system crashes again, we might miss the deadline, and the entire business will suffer."
-                : currentTask === 2
-                ? "Please sit in the correct seat before we begin. I need to ship the sheep to the island by noon. It is a great opportunity to improve my leadership skills. If we slip on the floor, we might sleep in the hospital tonight."
-                : currentTask === 3
-                ? "The photographer took many photographs for the biography section. We must evaluate the economic situation immediately. He was comfortable with the technology, but the delivery was delayed. It is necessary to communicate with the entire community."
-                : currentTask === 4
-                ? "The strong structure of the bridge attracts many strangers. We brought three fresh fruits from the street market. It starts at eight o'clock sharp. Please don't forget to check the clocks and spring into action."
-                : currentTask === 5
-                ? "I can't understand why he shouldn't accept the offer. Actually, specifically, it wasn't available yesterday. The quality of the product doesn't match the description. We mustn't ignore the problem, or it won't be solved easily."
-                : ""}
+              {getTaskPrompt()}
             </p>
           ) : (
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-4 relative">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p className="text-xs font-semibold text-blue-900 mb-2">Speech-to-Text Results:</p>
-                <p className="text-sm text-black leading-relaxed">
-                  {transcribedText || "No transcription available yet. Please record on page 1 first."}
+                <p className="text-xs font-semibold text-blue-900 mb-2">Speech-to-Text Result:</p>
+                <p className="text-sm leading-relaxed">
+                  {modelResults ? (
+                    renderComparedText(getTaskPrompt(), getModelResultText())
+                  ) : (
+                    "Loading transcription... Please wait."
+                  )}
                 </p>
               </div>
+
+              {isTranscribing && (
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800 font-semibold">
+                    ⏳ Transcribing audio with models...
+                  </p>
+                </div>
+              )}
+
+              {showOriginal && currentPage > 1 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+                  <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Original sentence</p>
+                        <p className="text-xs text-slate-500">Compare original text with the model result</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowOriginal(false)}
+                        className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-900">
+                      {getTaskPrompt()}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Review Cards */}
               <div className="space-y-4">
@@ -331,7 +508,13 @@ export default function TestStimuliPage() {
             {/* Status Messages */}
             {recordingStatus === "recording" && (
               <div className="w-full max-w-sm bg-red-100 p-3 rounded-lg mb-4 text-center">
-                <p className="text-sm text-red-800 font-semibold">🔴 Recording in progress...</p>
+                <p className="text-sm text-red-800 font-semibold">🔴 Recording in progress... Press again to stop recording.</p>
+              </div>
+            )}
+
+            {recordingStatus === "recorded" && (
+              <div className="w-full max-w-sm bg-indigo-100 p-3 rounded-lg mb-4 text-center">
+                <p className="text-sm text-indigo-800 font-semibold">✓ Recording complete. Press Next to upload.</p>
               </div>
             )}
 
@@ -368,18 +551,31 @@ export default function TestStimuliPage() {
           </>
         )}
 
-        {/* Next Button */}
-        <button
-          onClick={handleNext}
-          disabled={isUploading || (currentTask === 1 && currentPage === 1 && isRecording)}
-          className={`ml-auto w-32 h-12 bg-[#7C2AE8] text-white text-m font-semibold rounded-lg hover:bg-[#6a23c8] transition-colors shadow-lg ${
-            (isUploading || (currentTask === 1 && currentPage === 1 && isRecording))
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          {isUploading ? "Uploading..." : "Next"}
-        </button>
+        {/* Navigation Buttons */}
+        <div className="flex w-full justify-between items-center gap-3">
+          {currentPage > 1 ? (
+            <button
+              onClick={handlePrevious}
+              className="w-32 h-12 bg-gray-200 text-gray-800 text-m font-semibold rounded-lg hover:bg-gray-300 transition-colors shadow-sm"
+            >
+              Previous
+            </button>
+          ) : (
+            <div className="w-32" />
+          )}
+
+          <button
+            onClick={handleNext}
+            disabled={isUploading || isTranscribing || (currentTask === 1 && currentPage === 1 && isRecording)}
+            className={`w-32 h-12 bg-[#7C2AE8] text-white text-m font-semibold rounded-lg hover:bg-[#6a23c8] transition-colors shadow-lg ${
+              (isUploading || isTranscribing || (currentTask === 1 && currentPage === 1 && isRecording))
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            {isUploading ? "Uploading..." : "Next"}
+          </button>
+        </div>
           </>
         )}
       </main>

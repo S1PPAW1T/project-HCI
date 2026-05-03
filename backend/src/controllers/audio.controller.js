@@ -53,14 +53,20 @@ const handleTask1Upload = async (id, file, res, next) => {
     audio.audioUrl = audioUrl;
     await audio.save();
 
-    // Return the complete record
+    // Also transcribe with all 3 models for Task 1
+    const transcriptions = await speechService.transcribeWithAllModels(
+      file.buffer,
+      `task${1}.wav`,
+    );
+
     res.json({
       success: true,
-      message: "Audio uploaded successfully to Firebase",
+      message: "Audio uploaded successfully to Firebase and transcribed",
       data: {
         name: audio.name,
         age: audio.age,
         audioUrl: audio.audioUrl,
+        models: transcriptions,
       },
     });
   } catch (err) {
@@ -71,26 +77,35 @@ const handleTask1Upload = async (id, file, res, next) => {
 // Tasks 2-5: Convert audio to text using speech-to-text API
 const handleTaskSpeechToText = async (id, file, taskNumber, res, next) => {
   try {
-    console.log(`🎙️  Task ${taskNumber}: Converting audio to text...`);
+    console.log(`🎙️  Task ${taskNumber}: Converting audio to text with 3 models...`);
 
-    // Convert audio buffer to text
-    const transcribedText = await speechService.transcribeFromBuffer(
+    // Convert audio buffer to text using all 3 models
+    const transcriptions = await speechService.transcribeWithAllModels(
       file.buffer,
       `task${taskNumber}.wav`,
     );
 
     console.log(
-      `✓ Task ${taskNumber} transcription complete:`,
-      transcribedText,
+      `✓ Task ${taskNumber} transcription complete with 3 models`
     );
+
+    // Find the user record if available
+    let userRecord = null;
+    try {
+      userRecord = await Audio.findById(id);
+    } catch (err) {
+      console.warn("Could not find user record");
+    }
 
     res.json({
       success: true,
-      message: `Task ${taskNumber} audio converted to text`,
+      message: `Task ${taskNumber} audio converted to text using 3 models`,
       task: taskNumber,
       data: {
-        text: transcribedText,
+        models: transcriptions,
         taskNumber: taskNumber,
+        userId: id,
+        userName: userRecord?.name || "Unknown",
       },
     });
   } catch (err) {
