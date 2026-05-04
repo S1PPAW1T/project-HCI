@@ -75,7 +75,7 @@ const uploadToLocal = async (file, fileName) => {
         console.error("❌ Local storage failed:", err.message);
         reject(err);
       } else {
-        const publicUrl = `${process.env.API_URL || "http://localhost:5050"}/uploads/${fileName}`;
+        const publicUrl = `${process.env.API_URL || "http://localhost:5000"}/uploads/${fileName}`;
         console.log("✓ File saved locally");
         console.log("✓ URL:", publicUrl);
         resolve(publicUrl);
