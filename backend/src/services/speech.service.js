@@ -95,9 +95,11 @@ exports.transcribeWithGoogle = async (buffer, fileName = "audio.wav") => {
 };
 
 // OpenAI Whisper via buffer
-exports.transcribeWithWhisper = async (buffer, fileName = "audio.wav") => {
+const { exec } = require("child_process");
+
+exports.transcribeWithWhisperLocal = async (buffer, fileName = "audio.wav") => {
   try {
-    console.log("🔄 Transcribing with OpenAI Whisper...");
+    console.log("🔄 Transcribing with Whisper LOCAL...");
 
     const tempDir = path.join(__dirname, "../../temp");
     if (!fs.existsSync(tempDir)) {
@@ -107,19 +109,20 @@ exports.transcribeWithWhisper = async (buffer, fileName = "audio.wav") => {
     const tempFilePath = path.join(tempDir, `${Date.now()}_${fileName}`);
     fs.writeFileSync(tempFilePath, buffer);
 
-    const response = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(tempFilePath),
-      model: "whisper-1",
-      language: "en",
+    const result = await new Promise((resolve, reject) => {
+      exec(`python3 whisper_local.py ${tempFilePath}`, (err, stdout, stderr) => {
+        if (err) return reject(err);
+        resolve(stdout);
+      });
     });
 
     fs.unlinkSync(tempFilePath);
 
-    console.log("✓ Whisper transcription complete");
-    return response.text || "[No speech detected]";
+    console.log("✓ Whisper LOCAL transcription complete");
+    return result.trim() || "[No speech detected]";
   } catch (error) {
-    console.error("❌ Whisper transcription failed:", error.message);
-    return `[Whisper Error: ${error.message}]`;
+    console.error("❌ Whisper LOCAL failed:", error.message);
+    return `[Whisper Local Error: ${error.message}]`;
   }
 };
 
@@ -162,26 +165,18 @@ exports.transcribeWithDeepgram = async (buffer, fileName = "audio.wav") => {
 
 // Transcribe with all 3 models in parallel
 exports.transcribeWithAllModels = async (buffer, fileName = "audio.wav") => {
-  try {
-    console.log("🚀 Starting parallel transcription with all 3 models...");
+  console.log("🚀 Starting parallel transcription with all 3 models...");
 
-    const [googleResult, whisperResult, deepgramResult] = await Promise.allSettled([
-      exports.transcribeWithGoogle(buffer, fileName),
-      exports.transcribeWithWhisper(buffer, fileName),
-      exports.transcribeWithDeepgram(buffer, fileName),
-    ]);
+  const [googleResult, whisperResult, deepgramResult] = await Promise.allSettled([
+    exports.transcribeWithGoogle(buffer, fileName),
+    exports.transcribeWithWhisperLocal(buffer, fileName), // 👈 เปลี่ยนตรงนี้
+    exports.transcribeWithDeepgram(buffer, fileName),
+  ]);
 
-    const results = {
-      google: googleResult.status === 'fulfilled' ? googleResult.value : `[Google Error: ${googleResult.reason?.message}]`,
-      whisper: whisperResult.status === 'fulfilled' ? whisperResult.value : `[Whisper Error: ${whisperResult.reason?.message}]`,
-      deepgram: deepgramResult.status === 'fulfilled' ? deepgramResult.value : `[Deepgram Error: ${deepgramResult.reason?.message}]`,
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log("✓ All transcriptions complete");
-    return results;
-  } catch (error) {
-    console.error("❌ Parallel transcription failed:", error.message);
-    throw new Error(`Failed to transcribe with all models: ${error.message}`);
-  }
+  return {
+    google: googleResult.status === 'fulfilled' ? googleResult.value : `[Google Error]`,
+    whisper: whisperResult.status === 'fulfilled' ? whisperResult.value : `[Whisper Error]`,
+    deepgram: deepgramResult.status === 'fulfilled' ? deepgramResult.value : `[Deepgram Error]`,
+    timestamp: new Date().toISOString(),
+  };
 };
