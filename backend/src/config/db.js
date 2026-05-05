@@ -1,20 +1,22 @@
+// src/config/db.js
 const mongoose = require("mongoose");
 
+let isConnected = false;
+
 const connectDB = async () => {
-  // ถ้าเชื่อมต่ออยู่แล้วไม่ต้องต่อซ้ำ (ป้องกันปัญหาใน Serverless)
-  if (mongoose.connection.readyState >= 1) return;
+  if (isConnected) return; // ถ้าเชื่อมต่ออยู่แล้ว ไม่ต้องต่อซ้ำ
 
   try {
-    console.log("⏳ Connecting to MongoDB...");
-    await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // ถ้าต่อไม่ติดใน 5 วิ ให้ Error ทันที ไม่ต้องรอจน Buffering timeout
+    console.log("⏳ Connecting to MongoDB Atlas...");
+    const db = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // ถ้าต่อไม่ติดใน 5 วิ ให้แจ้ง Error ทันที ไม่ต้องรอจน Buffering
     });
-    console.log("✅ MongoDB connected");
+
+    isConnected = db.connections[0].readyState === 1;
+    console.log("✅ MongoDB connected successfully");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    // ไม่ต้อง process.exit(1) บน Vercel เพราะจะทำให้ฟังก์ชันตายถาวร
-    // ให้ throw error เพื่อให้เรารู้สาเหตุใน Logs แทนครับ
-    throw err;
+    console.error("❌ MongoDB connection error details:", err.message);
+    throw err; // ส่ง Error ต่อไปให้ Middleware จัดการ
   }
 };
 

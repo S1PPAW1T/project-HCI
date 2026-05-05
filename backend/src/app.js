@@ -30,11 +30,9 @@ const corsOptions = {
   credentials: true,
 };
 
-connectDB();
-
 app.use(cors(corsOptions));
 
-// 🚀 2. แก้ปัญหา PathError: ใช้ Middleware เช็ค Method แทนการระบุ Path ด้วย Regex
+// 🚀 2. แก้ปัญหา PathError: ใช้ Middleware เช็ค Method
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     return cors(corsOptions)(req, res, next);
@@ -53,6 +51,17 @@ if (process.env.NODE_ENV !== "production") {
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
+});
+
+// 🚀🚀🚀 จุดที่เพิ่ม: เรียกใช้งาน Database Connection ตรงนี้ครับ! 🚀🚀🚀
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("❌ Middleware DB Connection Error:", err);
+    res.status(500).json({ error: "Database connection failed" });
+  }
 });
 
 // Routes
