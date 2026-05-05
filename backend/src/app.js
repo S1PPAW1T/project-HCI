@@ -1,3 +1,4 @@
+// 🛠️ โหลดตัวแปร .env เฉพาะตอนรันบนเครื่องตัวเอง
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
@@ -15,9 +16,10 @@ const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
 
+// 🚀 1. ปรับปรุง CORS ให้รองรับระบบใหม่
 app.use(
   cors({
-    origin: "*", // อนุญาตให้ทุกเว็บยิง API มาได้ (ปรับเป็น "http://localhost:3000" เพื่อความปลอดภัยได้)
+    origin: true, // อนุญาตให้ Origin ที่ยิงมาผ่านได้ (ยืดหยุ่นกว่า "*")
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
       "Content-Type",
@@ -29,11 +31,15 @@ app.use(
   }),
 );
 
-app.options("*", cors());
+// 🚀 2. แก้ปัญหา PathError: เปลี่ยนจาก "*" เป็น "/(.*)"
+app.options("/(.*)", cors());
 
 app.use(express.json());
 
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// 🚀 3. จัดการ Static Files (ปิดไว้สำหรับ Production เพราะ Vercel เป็น Read-only)
+if (process.env.NODE_ENV !== "production") {
+  app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+}
 
 // Logging middleware
 app.use((req, res, next) => {
@@ -41,9 +47,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
+// Routes
 app.use("/api/health", healthRoutes);
-
 app.use("/api/audio", audioRoutes);
 app.use("/api/speech", speechRoutes);
 app.use("/api/user", userRoutes);
@@ -51,7 +56,7 @@ app.use("/api/professor", professorRoutes);
 
 app.use(errorHandler);
 
-// 🚀 3. เปิดพอร์ตเซิร์ฟเวอร์เฉพาะตอนรันบนเครื่องตัวเอง
+// 🚀 4. เปิดพอร์ตเซิร์ฟเวอร์เฉพาะตอนรันบนเครื่องตัวเอง (Local)
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 8000;
   app.listen(PORT, () => {
