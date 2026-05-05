@@ -8,7 +8,7 @@ const googleClient = new speech.SpeechClient({
     process.env.GOOGLE_APPLICATION_CREDENTIALS || "./serviceAccountKey.json",
 });
 
-// 1. Google Cloud Speech-to-Text
+// 1. กกก
 exports.transcribeWithGoogle = async (buffer) => {
   try {
     console.log("🔄 Transcribing with Google Cloud...");
