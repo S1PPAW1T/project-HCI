@@ -3,6 +3,7 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
+const connectDB = require("./config/db");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -28,6 +29,8 @@ const corsOptions = {
   ],
   credentials: true,
 };
+
+connectDB();
 
 app.use(cors(corsOptions));
 
