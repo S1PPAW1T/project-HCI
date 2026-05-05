@@ -98,7 +98,7 @@ const computeWerMetrics = (referenceText, hypothesisText) => {
   }
 
   const wer = Number(
-    ((substitutions + deletions + insertions) / referenceWordCount).toFixed(3)
+    ((substitutions + deletions + insertions) / referenceWordCount).toFixed(3),
   );
 
   return {
@@ -129,9 +129,7 @@ const saveSpeechEvaluation = async (audioId, taskNumber, transcriptions) => {
     taskNumber,
     referenceText,
     models: {
-      google: buildModelEvaluation(referenceText, transcriptions.google),
       whisper: buildModelEvaluation(referenceText, transcriptions.whisper),
-      deepgram: buildModelEvaluation(referenceText, transcriptions.deepgram),
     },
     createdAt: new Date(),
   };
@@ -229,7 +227,9 @@ const handleTask1Upload = async (id, file, res, next) => {
 // Tasks 2-5: Convert audio to text using speech-to-text API
 const handleTaskSpeechToText = async (id, file, taskNumber, res, next) => {
   try {
-    console.log(`🎙️  Task ${taskNumber}: Converting audio to text with 3 models...`);
+    console.log(
+      `🎙️  Task ${taskNumber}: Converting audio to text with 3 models...`,
+    );
 
     // Convert audio buffer to text using all 3 models
     const transcriptions = await speechService.transcribeWithAllModels(
@@ -237,11 +237,13 @@ const handleTaskSpeechToText = async (id, file, taskNumber, res, next) => {
       `task${taskNumber}.wav`,
     );
 
-    console.log(
-      `✓ Task ${taskNumber} transcription complete with 3 models`
-    );
+    console.log(`✓ Task ${taskNumber} transcription complete with 3 models`);
 
-    const evaluation = await saveSpeechEvaluation(id, taskNumber, transcriptions);
+    const evaluation = await saveSpeechEvaluation(
+      id,
+      taskNumber,
+      transcriptions,
+    );
 
     const userRecord = await Audio.findById(id);
     if (!userRecord) {
@@ -325,7 +327,9 @@ exports.saveRatings = async (req, res, next) => {
 
     for (const ratingData of Object.values(ratingsByModelTask)) {
       const existingIndex = audio.ratings.findIndex(
-        (r) => r.taskNumber === ratingData.taskNumber && r.modelName === ratingData.modelName
+        (r) =>
+          r.taskNumber === ratingData.taskNumber &&
+          r.modelName === ratingData.modelName,
       );
       if (existingIndex >= 0) {
         audio.ratings[existingIndex] = ratingData;

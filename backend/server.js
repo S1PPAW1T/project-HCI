@@ -7,6 +7,12 @@ const app = require("./src/app");
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// For Vercel Serverless
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  // Local development
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}

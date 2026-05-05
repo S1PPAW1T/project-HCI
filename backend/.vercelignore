@@ -1,0 +1,12 @@
+node_modules
+venv
+temp
+uploads
+.env
+.git
+.gitignore
+whisper_local.py
+*.pyc
+__pycache__
+.DS_Store
+serviceAccountKey.json
