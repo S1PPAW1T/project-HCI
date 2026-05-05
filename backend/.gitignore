@@ -47,3 +47,8 @@ nodemon.json
 *.local
 
 serviceAccountKey.json
+
+# Python (Whisper local)
+venv/
+__pycache__/
+*.pyc
