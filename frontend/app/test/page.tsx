@@ -579,7 +579,7 @@ export default function TestStimuliPage() {
                   : "bg-gray-300 hover:bg-gray-400"
               } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              <Image src="public/picture/microphone.png" alt="Microphone" width={84} height={84} />
+              <Image src="/picture/microphone.png" alt="Microphone" width={84} height={84} />
             </button>
           </>
         )}
