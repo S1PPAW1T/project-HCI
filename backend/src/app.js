@@ -1,4 +1,3 @@
-// 🛠️ โหลดตัวแปร .env เฉพาะตอนรันบนเครื่องตัวเอง (Vercel จะข้ามขั้นตอนนี้)
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
@@ -16,7 +15,6 @@ const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
 
-// 🚀 1. แก้ไข CORS ป้องกันปัญหา Blocked by CORS policy บน Vercel
 app.use(
   cors({
     origin: "*", // อนุญาตให้ทุกเว็บยิง API มาได้ (ปรับเป็น "http://localhost:3000" เพื่อความปลอดภัยได้)
@@ -31,12 +29,10 @@ app.use(
   }),
 );
 
-// 🚀 2. ดักจับ OPTIONS request (Preflight) ให้ตอบกลับโอเคทันที
 app.options("*", cors());
 
 app.use(express.json());
 
-// Serve static files (for local audio uploads)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Logging middleware
