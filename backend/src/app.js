@@ -16,27 +16,32 @@ const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
 
-// 🚀 1. ปรับปรุง CORS ให้รองรับระบบใหม่
-app.use(
-  cors({
-    origin: true, // อนุญาตให้ Origin ที่ยิงมาผ่านได้ (ยืดหยุ่นกว่า "*")
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-Requested-With",
-      "Accept",
-    ],
-    credentials: true,
-  }),
-);
+// 🚀 1. ตั้งค่า CORS Middleware
+const corsOptions = {
+  origin: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+  ],
+  credentials: true,
+};
 
-// 🚀 2. แก้ปัญหา PathError: เปลี่ยนจาก "*" เป็น "/(.*)"
-app.options("/(.*)", cors());
+app.use(cors(corsOptions));
+
+// 🚀 2. แก้ปัญหา PathError: ใช้ Middleware เช็ค Method แทนการระบุ Path ด้วย Regex
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return cors(corsOptions)(req, res, next);
+  }
+  next();
+});
 
 app.use(express.json());
 
-// 🚀 3. จัดการ Static Files (ปิดไว้สำหรับ Production เพราะ Vercel เป็น Read-only)
+// 🚀 3. จัดการ Static Files (เฉพาะ Local)
 if (process.env.NODE_ENV !== "production") {
   app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 }
@@ -64,5 +69,5 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// 🔥 บรรทัดนี้สำคัญที่สุดสำหรับ Vercel ห้ามลบเด็ดขาด
+// 🔥 สำคัญที่สุดสำหรับ Vercel
 module.exports = app;
