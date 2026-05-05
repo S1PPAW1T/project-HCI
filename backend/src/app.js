@@ -1,3 +1,8 @@
+// 🛠️ โหลดตัวแปร .env เฉพาะตอนรันบนเครื่องตัวเอง (Vercel จะข้ามขั้นตอนนี้)
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -11,7 +16,24 @@ const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
 
-app.use(cors());
+// 🚀 1. แก้ไข CORS ป้องกันปัญหา Blocked by CORS policy บน Vercel
+app.use(
+  cors({
+    origin: "*", // อนุญาตให้ทุกเว็บยิง API มาได้ (ปรับเป็น "http://localhost:3000" เพื่อความปลอดภัยได้)
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
+    credentials: true,
+  }),
+);
+
+// 🚀 2. ดักจับ OPTIONS request (Preflight) ให้ตอบกลับโอเคทันที
+app.options("*", cors());
+
 app.use(express.json());
 
 // Serve static files (for local audio uploads)
@@ -33,4 +55,13 @@ app.use("/api/professor", professorRoutes);
 
 app.use(errorHandler);
 
+// 🚀 3. เปิดพอร์ตเซิร์ฟเวอร์เฉพาะตอนรันบนเครื่องตัวเอง
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running locally on port ${PORT}`);
+  });
+}
+
+// 🔥 บรรทัดนี้สำคัญที่สุดสำหรับ Vercel ห้ามลบเด็ดขาด
 module.exports = app;
