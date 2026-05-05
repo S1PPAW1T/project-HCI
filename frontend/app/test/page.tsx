@@ -314,20 +314,53 @@ export default function TestStimuliPage() {
     }
   };
 
-  const handleReturnHome = () => {
-    router.push("/");
+  const handleReturnHome = async () => {
+    try {
+      const sessionId = localStorage.getItem("audioSessionId");
+      if (!sessionId) {
+        router.push("/");
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const response = await fetch(`${apiUrl}/api/audio/${sessionId}/ratings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ratings: ratings,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn("Failed to save ratings, but continuing...");
+      }
+
+      router.push("/");
+    } catch (error) {
+      console.error("Error saving ratings:", error);
+      router.push("/");
+    }
+  };
+
+  const getModelKey = () => {
+    if (currentPage === 2) return "deepgram";
+    if (currentPage === 3) return "whisper";
+    if (currentPage === 4) return "google";
+    return "task";
   };
 
   const handleStarRating = (questionIndex: number, rating: number) => {
-    const ratingKey = `task${currentTask}_q${questionIndex}`;
+    const ratingKey = `task${currentTask}_${getModelKey()}_q${questionIndex}`;
     setRatings(prev => ({
       ...prev,
-      [ratingKey]: rating
+      [ratingKey]: rating,
     }));
   };
 
   const renderStars = (questionIndex: number) => {
-    const ratingKey = `task${currentTask}_q${questionIndex}`;
+    const ratingKey = `task${currentTask}_${getModelKey()}_q${questionIndex}`;
     const currentRating = (ratings as Record<string, number>)[ratingKey] || 0;
     
     return (

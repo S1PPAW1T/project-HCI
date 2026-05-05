@@ -40,7 +40,7 @@ export default function Home() {
           className="text-[#4F46E5] text-base font-medium underline mb-8 hover:text-[#6a23c8]"
           onClick={() => {
                setShowConsent(false);
-               router.push("/login");
+               router.push("/professor");
           }}
         >
           [สำหรับผู้เชี่ยวชาญด้านภาษากรุณาคลิกที่นี่]
