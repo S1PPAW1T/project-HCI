@@ -13,7 +13,7 @@ export default function TestStimuliPage() {
   const [ratings, setRatings] = useState({});
   const [audioUrl, setAudioUrl] = useState(""); // Store audio URL from Firebase
   const [modelResults, setModelResults] = useState<{
-    google: string;
+    assembly: string;
     whisper: string;
     deepgram: string;
   } | null>(null);
@@ -99,7 +99,7 @@ export default function TestStimuliPage() {
   const getModelTitle = () => {
     if (currentPage === 2) return "Deepgram";
     if (currentPage === 3) return "OpenAI Whisper";
-    if (currentPage === 4) return "Google Speech-to-Text";
+    if (currentPage === 4) return "AssemblyAI";
     return "";
   };
 
@@ -107,7 +107,7 @@ export default function TestStimuliPage() {
     if (!modelResults) return "Loading transcription... Please wait.";
     if (currentPage === 2) return modelResults.deepgram;
     if (currentPage === 3) return modelResults.whisper;
-    if (currentPage === 4) return modelResults.google;
+    if (currentPage === 4) return modelResults.assembly;
     return "";
   };  
   
@@ -310,13 +310,13 @@ export default function TestStimuliPage() {
       // If transcription results are included, store them for display
       if (data.data.models) {
         setModelResults({
-          google: data.data.models.google,
+          assembly: data.data.models.assembly,
           whisper: data.data.models.whisper,
           deepgram: data.data.models.deepgram,
         });
 
-        // Show the Google result by default as the first model page
-        setTranscribedText(data.data.models.google);
+        // Show the assembly result by default as the first model page
+        setTranscribedText(data.data.models.assembly);
       } else if (currentTask === 1) {
         setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
       }
@@ -388,7 +388,7 @@ export default function TestStimuliPage() {
   const getModelKey = () => {
     if (currentPage === 2) return "deepgram";
     if (currentPage === 3) return "whisper";
-    if (currentPage === 4) return "google";
+    if (currentPage === 4) return "assembly";
     return "task";
   };
 
