@@ -19,7 +19,7 @@ const app = express();
 
 // 🚀 1. ตั้งค่า CORS Middleware
 const corsOptions = {
-  origin: true,
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: [
     "Content-Type",
@@ -27,7 +27,6 @@ const corsOptions = {
     "X-Requested-With",
     "Accept",
   ],
-  credentials: true,
 };
 
 app.use(cors(corsOptions));

@@ -3,7 +3,7 @@
  * Handles uploading recorded audio to the backend
  */
 
-export const uploadAudio = async (audioBlob: Blob, apiUrl: string = "https://project-hci-khaki.vercel.app") => {
+export const uploadAudio = async (audioBlob: Blob, apiUrl: string = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") => {
   try {
     const sessionId = localStorage.getItem("audioSessionId");
     
