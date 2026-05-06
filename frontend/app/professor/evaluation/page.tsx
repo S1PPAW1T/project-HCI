@@ -18,7 +18,7 @@ export default function EvaluationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const router = useRouter();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const apiUrl = "https://project-hci-khaki.vercel.app";
   const itemsPerPage = 2;
 
   useEffect(() => {

@@ -16,7 +16,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const apiUrl = "https://project-hci-khaki.vercel.app";
       console.log("Logging in to:", apiUrl);
       
       const response = await fetch(

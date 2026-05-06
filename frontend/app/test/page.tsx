@@ -255,7 +255,7 @@ export default function TestStimuliPage() {
       formData.append("task", currentTask.toString()); // Add task number
       formData.append("audio", audioBlob, `task${currentTask}.wav`);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const apiUrl = "https://project-hci-khaki.vercel.app";
       const response = await fetch(`${apiUrl}/api/audio/upload`, {
         method: "POST",
         body: formData,
