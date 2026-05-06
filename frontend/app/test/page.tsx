@@ -13,12 +13,15 @@ export default function TestStimuliPage() {
   const [ratings, setRatings] = useState({});
   const [audioUrl, setAudioUrl] = useState(""); // Store audio URL from Firebase
   const [modelResults, setModelResults] = useState<{
-    assembly: string;
+    google: string;
     whisper: string;
     deepgram: string;
   } | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
+  
+  // 💡 State สำหรับการ์ดแจ้งเตือน
+  const [showWarning, setShowWarning] = useState(false);
   
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -47,9 +50,12 @@ export default function TestStimuliPage() {
 
   const normalizeWord = (text: string) => text.toLowerCase().replace(/^[^a-z0-9ก-๙]+|[^a-z0-9ก-๙]+$/gi, "");
 
-  const renderComparedText = (original: string = "", transcript: string = "") => {
-    const originalWords = original.split(/\s+/).map((word) => normalizeWord(word)).filter(Boolean);
-    const transcriptWords = transcript.split(/\s+/).map((word) => ({ raw: word, normalized: normalizeWord(word) })).filter((item) => item.normalized);
+  const renderComparedText = (original: string, transcript: string) => {
+    const safeOriginal = original || "";
+    const safeTranscript = transcript || "";
+
+    const originalWords = safeOriginal.split(/\s+/).map((word) => normalizeWord(word)).filter(Boolean);
+    const transcriptWords = safeTranscript.split(/\s+/).map((word) => ({ raw: word, normalized: normalizeWord(word) })).filter((item) => item.normalized);
 
     const m = originalWords.length;
     const n = transcriptWords.length;
@@ -93,7 +99,7 @@ export default function TestStimuliPage() {
   const getModelTitle = () => {
     if (currentPage === 2) return "Deepgram";
     if (currentPage === 3) return "OpenAI Whisper";
-    if (currentPage === 4) return "AssemblyAI";
+    if (currentPage === 4) return "Google Speech-to-Text";
     return "";
   };
 
@@ -101,9 +107,10 @@ export default function TestStimuliPage() {
     if (!modelResults) return "Loading transcription... Please wait.";
     if (currentPage === 2) return modelResults.deepgram;
     if (currentPage === 3) return modelResults.whisper;
-    if (currentPage === 4) return modelResults.assembly;
+    if (currentPage === 4) return modelResults.google;
     return "";
   };  
+  
   // Refs for recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -153,11 +160,11 @@ export default function TestStimuliPage() {
         setIsRecording(false);
         setRecordingStatus("recorded");
       } else {
-        // Start recording
+        // Start recording (ลดขนาดไฟล์ด้วย 16kHz Mono)
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: { 
-            sampleRate: 16000, // ความถี่มาตรฐานที่ AI ทุกค่ายใช้ (ไฟล์เล็กลงเยอะ)
-            channelCount: 1    // เสียงแบบ Mono (ตัดซ้าย-ขวาออก)
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1
           } 
         });
         streamRef.current = stream;
@@ -206,6 +213,22 @@ export default function TestStimuliPage() {
   };
 
   const handleNext = async () => {
+    // 🛡️ ระบบตรวจสอบ: ต้องให้คะแนนครบทุกข้อก่อนในหน้า 2, 3, 4
+    if (currentPage > 1) {
+      const modelKey = getModelKey();
+      
+      const isAllRated = reviewQuestions.every((_, index) => {
+        const key = `task${currentTask}_${modelKey}_q${index}`;
+        return (ratings as Record<string, number>)[key] && (ratings as Record<string, number>)[key] > 0;
+      });
+
+      if (!isAllRated) {
+        // 💡 เรียกเปิดการ์ดแจ้งเตือนแทนการใช้ alert()
+        setShowWarning(true);
+        return; 
+      }
+    }
+
     // Stop recording if still active
     if (isRecording) {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -217,7 +240,7 @@ export default function TestStimuliPage() {
       setIsRecording(false);
     }
 
-    // If on page 1, upload audio (handles both task 1 upload and tasks 2-5 transcription)
+    // Upload audio for all tasks on page 1
     if (currentPage === 1) {
       await uploadAudio();
       return; // Don't proceed until upload completes
@@ -254,13 +277,17 @@ export default function TestStimuliPage() {
         throw new Error("No active session. Please login again.");
       }
 
-      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/mp4" });
+      // ใช้ไฟล์รูปแบบดั้งเดิมเพื่อความเร็ว และรองรับเบราว์เซอร์
+      const audioBlob = new Blob(audioChunksRef.current);
+      const isMp4 = audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a');
+      const fileExt = isMp4 ? 'mp4' : 'webm';
+
       const formData = new FormData();
       formData.append("id", sessionId);
-      formData.append("task", currentTask.toString()); // Add task number
-      formData.append("audio", audioBlob, `task${currentTask}.mp4`);
+      formData.append("task", currentTask.toString()); 
+      formData.append("audio", audioBlob, `task${currentTask}.${fileExt}`);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
       const response = await fetch(`${apiUrl}/api/audio/upload`, {
         method: "POST",
         body: formData,
@@ -283,17 +310,26 @@ export default function TestStimuliPage() {
       // If transcription results are included, store them for display
       if (data.data.models) {
         setModelResults({
-          assembly: data.data.models.assembly,
+          google: data.data.models.google,
           whisper: data.data.models.whisper,
           deepgram: data.data.models.deepgram,
         });
 
-        // Show the Assembly result by default as the first model page
-        setTranscribedText(data.data.models.assembly);
+        // Show the Google result by default as the first model page
+        setTranscribedText(data.data.models.google);
       } else if (currentTask === 1) {
         setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
       }
       
+      console.log("Audio processed:", data);
+
+      // Handle different task responses
+      if (currentTask === 1) {
+        setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
+      } else {
+        setTranscribedText(`Task ${currentTask} - Speech to Text:\n\n"${data.data.text}"`);
+      }
+
       setRecordingStatus("uploaded");
 
       // Proceed to next page after successful upload
@@ -305,7 +341,7 @@ export default function TestStimuliPage() {
           setCurrentPage(1);
           setRecordingStatus("idle");
           setUploadError("");
-          setModelResults(null); // Reset model results for new task
+          setModelResults(null); 
           audioChunksRef.current = [];
         }
       }, 1500);
@@ -352,7 +388,7 @@ export default function TestStimuliPage() {
   const getModelKey = () => {
     if (currentPage === 2) return "deepgram";
     if (currentPage === 3) return "whisper";
-    if (currentPage === 4) return "assembly";
+    if (currentPage === 4) return "google";
     return "task";
   };
 
@@ -388,7 +424,31 @@ export default function TestStimuliPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen w-[390px] mx-auto bg-white font-sans">
+    <div className="flex flex-col items-center justify-center min-h-screen w-[390px] mx-auto bg-white font-sans relative">
+      
+      {/* 💡 การ์ดแจ้งเตือน (Warning Modal) */}
+      {showWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4 transition-opacity">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border-t-4 border-[#7C2AE8] transform transition-all">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">⚠️</span>
+              <h3 className="font-bold text-gray-900 text-lg">Action Required</h3>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700 text-sm mb-1">
+                Please rate all questions before proceeding.
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowWarning(false)}
+              className="w-full bg-[#7C2AE8] text-white rounded-lg py-2.5 font-semibold hover:bg-[#6a23c8] transition-colors shadow-md"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Logo */}
       <div className="w-full flex justify-end pt-8 pr-8">
         <Image src="/picture/logo.png" alt="Logo" width={40} height={49} />
@@ -539,7 +599,7 @@ export default function TestStimuliPage() {
               <div className="text-xs font-semibold text-black mb-2">Please note:</div>
               <ul className="text-xs text-zinc-600 space-y-2 list-disc pl-5">
                 <li>If you press the microphone button again, the system will start a new recording and overwrite the previous one.</li>
-                <li>Click Next after recording to upload your audio.</li>
+                <li>Click Next after recording to translate your audio.</li>
               </ul>
             </div>
 
@@ -550,15 +610,16 @@ export default function TestStimuliPage() {
               </div>
             )}
 
-            {recordingStatus === "recorded" && (
+            {/* ซ่อนข้อความ Recording complete เมื่อกำลัง Translating */}
+            {recordingStatus === "recorded" && !isUploading && (
               <div className="w-full max-w-sm bg-indigo-100 p-3 rounded-lg mb-4 text-center">
-                <p className="text-sm text-indigo-800 font-semibold">✓ Recording complete. Press Next to upload.</p>
+                <p className="text-sm text-indigo-800 font-semibold">✓ Recording complete. Press Next to translate.</p>
               </div>
             )}
 
             {recordingStatus === "uploaded" && (
               <div className="w-full max-w-sm bg-green-100 p-3 rounded-lg mb-4 text-center">
-                <p className="text-sm text-green-800 font-semibold">✓ Audio uploaded successfully!</p>
+                <p className="text-sm text-green-800 font-semibold">✓ Audio translated successfully!</p>
               </div>
             )}
 
@@ -570,7 +631,7 @@ export default function TestStimuliPage() {
 
             {isUploading && (
               <div className="w-full max-w-sm bg-blue-100 p-3 rounded-lg mb-4 text-center">
-                <p className="text-sm text-blue-800 font-semibold">⏳ Uploading audio...</p>
+                <p className="text-sm text-blue-800 font-semibold">⏳ Translating audio...</p>
               </div>
             )}
 
@@ -611,7 +672,7 @@ export default function TestStimuliPage() {
                 : ""
             }`}
           >
-            {isUploading ? "Uploading..." : "Next"}
+            {isUploading ? "Translating..." : "Next"}
           </button>
         </div>
           </>
