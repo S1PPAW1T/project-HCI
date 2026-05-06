@@ -13,7 +13,7 @@ export default function TestStimuliPage() {
   const [ratings, setRatings] = useState({});
   const [audioUrl, setAudioUrl] = useState(""); // Store audio URL from Firebase
   const [modelResults, setModelResults] = useState<{
-    google: string;
+    assembly: string;
     whisper: string;
     deepgram: string;
   } | null>(null);
@@ -47,7 +47,7 @@ export default function TestStimuliPage() {
 
   const normalizeWord = (text: string) => text.toLowerCase().replace(/^[^a-z0-9ก-๙]+|[^a-z0-9ก-๙]+$/gi, "");
 
-  const renderComparedText = (original: string, transcript: string) => {
+  const renderComparedText = (original: string = "", transcript: string = "") => {
     const originalWords = original.split(/\s+/).map((word) => normalizeWord(word)).filter(Boolean);
     const transcriptWords = transcript.split(/\s+/).map((word) => ({ raw: word, normalized: normalizeWord(word) })).filter((item) => item.normalized);
 
@@ -93,7 +93,7 @@ export default function TestStimuliPage() {
   const getModelTitle = () => {
     if (currentPage === 2) return "Deepgram";
     if (currentPage === 3) return "OpenAI Whisper";
-    if (currentPage === 4) return "Google Speech-to-Text";
+    if (currentPage === 4) return "AssemblyAI";
     return "";
   };
 
@@ -101,7 +101,7 @@ export default function TestStimuliPage() {
     if (!modelResults) return "Loading transcription... Please wait.";
     if (currentPage === 2) return modelResults.deepgram;
     if (currentPage === 3) return modelResults.whisper;
-    if (currentPage === 4) return modelResults.google;
+    if (currentPage === 4) return modelResults.assembly;
     return "";
   };  
   // Refs for recording
@@ -154,7 +154,12 @@ export default function TestStimuliPage() {
         setRecordingStatus("recorded");
       } else {
         // Start recording
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: { 
+            sampleRate: 16000, // ความถี่มาตรฐานที่ AI ทุกค่ายใช้ (ไฟล์เล็กลงเยอะ)
+            channelCount: 1    // เสียงแบบ Mono (ตัดซ้าย-ขวาออก)
+          } 
+        });
         streamRef.current = stream;
         
         const mediaRecorder = new MediaRecorder(stream);
@@ -249,11 +254,11 @@ export default function TestStimuliPage() {
         throw new Error("No active session. Please login again.");
       }
 
-      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/mp4" });
       const formData = new FormData();
       formData.append("id", sessionId);
       formData.append("task", currentTask.toString()); // Add task number
-      formData.append("audio", audioBlob, `task${currentTask}.wav`);
+      formData.append("audio", audioBlob, `task${currentTask}.mp4`);
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const response = await fetch(`${apiUrl}/api/audio/upload`, {
@@ -278,13 +283,13 @@ export default function TestStimuliPage() {
       // If transcription results are included, store them for display
       if (data.data.models) {
         setModelResults({
-          google: data.data.models.google,
+          assembly: data.data.models.assembly,
           whisper: data.data.models.whisper,
           deepgram: data.data.models.deepgram,
         });
 
-        // Show the Google result by default as the first model page
-        setTranscribedText(data.data.models.google);
+        // Show the Assembly result by default as the first model page
+        setTranscribedText(data.data.models.assembly);
       } else if (currentTask === 1) {
         setTranscribedText(`Audio uploaded successfully!\n\nName: ${data.data.name}\nAge: ${data.data.age}`);
       }
@@ -347,7 +352,7 @@ export default function TestStimuliPage() {
   const getModelKey = () => {
     if (currentPage === 2) return "deepgram";
     if (currentPage === 3) return "whisper";
-    if (currentPage === 4) return "google";
+    if (currentPage === 4) return "assembly";
     return "task";
   };
 

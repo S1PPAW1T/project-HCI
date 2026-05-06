@@ -74,7 +74,7 @@ const ratingsSchema = new mongoose.Schema(
     },
     modelName: {
       type: String,
-      enum: ["google", "whisper", "deepgram"],
+      enum: ["assembly", "whisper", "deepgram"],
       required: true,
     },
     ratings: {

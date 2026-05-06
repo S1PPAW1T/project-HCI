@@ -1,37 +1,38 @@
-const speech = require("@google-cloud/speech");
 const axios = require("axios");
 const FormData = require("form-data");
+const { AssemblyAI } = require("assemblyai");
 
-// ตั้งค่า Google Cloud Client
-const googleClient = new speech.SpeechClient({
-  keyFilename:
-    process.env.GOOGLE_APPLICATION_CREDENTIALS || "./serviceAccountKey.json",
+// 🚀 1. ตั้งค่า AssemblyAI Client
+const assemblyaiClient = new AssemblyAI({
+  apiKey: process.env.ASSEMBLYAI_API_KEY,
 });
 
-// 1. กกก
-exports.transcribeWithGoogle = async (buffer) => {
+// 1. AssemblyAI (แทนที่ Google)
+exports.transcribeWithAssemblyAI = async (buffer) => {
   try {
-    console.log("🔄 Transcribing with Google Cloud...");
+    console.log("🔄 Transcribing with AssemblyAI...");
 
-    const audio = { content: buffer.toString("base64") };
-    const config = {
-      encoding: "LINEAR16",
-      sampleRateHertz: 16000,
-      languageCode: "en-US",
-      model: "latest_long",
-      useEnhanced: true,
-    };
+    if (!process.env.ASSEMBLYAI_API_KEY) {
+      console.warn("⚠️ AssemblyAI API key not configured, skipping...");
+      return "[AssemblyAI API key not configured]";
+    }
 
-    const [response] = await googleClient.recognize({ audio, config });
-    const transcription = response.results
-      .map((result) => result.alternatives[0].transcript)
-      .join("\n");
+    // 🚀 อัปเดตล่าสุด: ใช้ speech_models (เติม s และเป็น Array)
+    const transcript = await assemblyaiClient.transcripts.transcribe({
+      audio: buffer,
+      language_code: "en", // 🇹🇭 เปลี่ยนเป็น "th" ได้ถ้าเสียงเป็นภาษาไทย
+      speech_models: ["universal-3-pro"],
+    });
 
-    console.log("✓ Google Cloud transcription complete");
-    return transcription || "[No speech detected]";
+    if (transcript.status === "error") {
+      throw new Error(transcript.error);
+    }
+
+    console.log("✓ AssemblyAI transcription complete");
+    return transcript.text || "[No speech detected]";
   } catch (error) {
-    console.error("❌ Google Cloud transcription failed:", error.message);
-    return `[Google Cloud Error: ${error.message}]`;
+    console.error("❌ AssemblyAI transcription failed:", error.message);
+    return `[AssemblyAI Error: ${error.message}]`;
   }
 };
 
@@ -42,8 +43,8 @@ exports.transcribeWithWhisperAPI = async (buffer) => {
 
     const form = new FormData();
     form.append("file", buffer, {
-      filename: "audio.wav",
-      contentType: "audio/wav",
+      filename: "audio.mp4",
+      contentType: "audio/mp4",
     });
     form.append("model", "whisper-1");
 
@@ -83,11 +84,11 @@ exports.transcribeWithDeepgram = async (buffer) => {
       {
         headers: {
           Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
-          "Content-Type": "audio/wav",
+          "Content-Type": "audio/mp4",
         },
         params: {
           model: "nova-2",
-          language: "en",
+          language: "en", // 🇹🇭 เปลี่ยนเป็น "th" ได้ถ้าเสียงเป็นภาษาไทย
           punctuate: true,
         },
       },
@@ -108,27 +109,30 @@ exports.transcribeWithDeepgram = async (buffer) => {
 exports.transcribeWithAllModels = async (buffer) => {
   console.log("🚀 Starting parallel transcription with all 3 models...");
 
-  // ไม่จำเป็นต้องส่ง fileName แล้ว เพราะทั้ง 3 โมเดลใช้ Buffer ส่งตรงได้เลย
-  const [googleResult, whisperResult, deepgramResult] =
+  const [assemblyResult, whisperResult, deepgramResult] =
     await Promise.allSettled([
-      exports.transcribeWithGoogle(buffer),
+      exports.transcribeWithAssemblyAI(buffer),
       exports.transcribeWithWhisperAPI(buffer),
       exports.transcribeWithDeepgram(buffer),
     ]);
 
   return {
-    google:
-      googleResult.status === "fulfilled"
-        ? googleResult.value
-        : `[Google Error]`,
+    // 🚀 เปลี่ยน key เป็น 'assembly' ให้ตรงกับในไฟล์ audio.controller.js
+    assembly:
+      assemblyResult.status === "fulfilled"
+        ? assemblyResult.value || "[No output from AssemblyAI]"
+        : `[AssemblyAI Error]`,
+
     whisper:
       whisperResult.status === "fulfilled"
-        ? whisperResult.value
+        ? whisperResult.value || "[No output from Whisper]"
         : `[Whisper Error]`,
+
     deepgram:
       deepgramResult.status === "fulfilled"
-        ? deepgramResult.value
+        ? deepgramResult.value || "[No output from Deepgram]"
         : `[Deepgram Error]`,
+
     timestamp: new Date().toISOString(),
   };
 };

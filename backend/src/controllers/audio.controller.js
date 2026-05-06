@@ -10,12 +10,17 @@ const taskReferenceTexts = {
   5: "I can't understand why he shouldn't accept the offer. Actually, specifically, it wasn't available yesterday. The quality of the product doesn't match the description. We mustn't ignore the problem, or it won't be solved easily.",
 };
 
-const normalizeWords = (text) =>
-  text
+const normalizeWords = (text) => {
+  if (!text || typeof text !== "string") {
+    text = "";
+  }
+
+  return text
     .toLowerCase()
     .replace(/[^a-z0-9ก-๙\s]+/gi, " ")
     .split(/\s+/)
     .filter(Boolean);
+}
 
 const computeWerMetrics = (referenceText, hypothesisText) => {
   const referenceWords = normalizeWords(referenceText);
@@ -129,7 +134,7 @@ const saveSpeechEvaluation = async (audioId, taskNumber, transcriptions) => {
     taskNumber,
     referenceText,
     models: {
-      google: buildModelEvaluation(referenceText, transcriptions.google),
+      assembly: buildModelEvaluation(referenceText, transcriptions.assembly),
       whisper: buildModelEvaluation(referenceText, transcriptions.whisper),
       deepgram: buildModelEvaluation(referenceText, transcriptions.deepgram),
     },
@@ -205,7 +210,7 @@ const handleTask1Upload = async (id, file, res, next) => {
     // Also transcribe with all 3 models for Task 1
     const transcriptions = await speechService.transcribeWithAllModels(
       file.buffer,
-      `task${1}.wav`,
+      `task${1}.mp4`,
     );
 
     const evaluation = await saveSpeechEvaluation(id, 1, transcriptions);
@@ -234,7 +239,7 @@ const handleTaskSpeechToText = async (id, file, taskNumber, res, next) => {
     // Convert audio buffer to text using all 3 models
     const transcriptions = await speechService.transcribeWithAllModels(
       file.buffer,
-      `task${taskNumber}.wav`,
+      `task${taskNumber}.mp4`,
     );
 
     console.log(

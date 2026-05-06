@@ -32,7 +32,7 @@ export default function Home() {
           className="w-[320px] h-[64px] bg-[#7C2AE8] text-white text-2xl font-medium rounded-full mb-3 shadow-md hover:bg-[#6a23c8] transition-colors"
           onClick={() => setShowConsent(true)}
         >
-          เริ่มทำแบบประเมิน
+          Start Evaluation
         </button>
         {/* Secondary Link */}
         <a
@@ -43,7 +43,7 @@ export default function Home() {
                router.push("/professor");
           }}
         >
-          [สำหรับผู้เชี่ยวชาญด้านภาษากรุณาคลิกที่นี่]
+          [Access for Expert Validation]
         </a>
         {/* Footer */}
         <div className="text-xs text-zinc-500 text-center mt-36 mb-2 max-w-xs mx-auto">
