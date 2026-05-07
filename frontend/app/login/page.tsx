@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [age, setAge] = useState("");
   const [consent, setConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isValidAge = age !== "" && Number(age) >= 18 && Number(age) <= 25;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,10 +159,22 @@ export default function LoginPage() {
                   id="age"
                   type="number"
                   value={age}
+                  min={18}
+                  max={25}
                   onChange={(e) => setAge(e.target.value)}
-                  className="w-full px-4 py-2 text-sm rounded-lg border border-purple-200 bg-purple-100 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                  className={`w-full px-4 py-2 text-sm rounded-lg border bg-purple-100 text-black placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors
+                    ${
+                      age && !isValidAge
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-purple-200 focus:ring-purple-500"
+                    }`}                  
                   required
                 />
+                {age && !isValidAge && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Age must be between 18 and 25 years old.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -170,7 +183,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex justify-center pt-4 w-full">
             <button
               type="submit"
-              disabled={isLoading || !consent || !name || !age}
+              disabled={isLoading || !consent || !name || !age || !isValidAge}
               className="w-full h-[48px] bg-[#7C2AE8] text-white font-medium rounded-lg hover:bg-[#6a23c8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-base"
             >
               {isLoading ? "Submitting..." : "Submit"}

@@ -30,7 +30,7 @@ export default function Home() {
         {/* Main Button */}
         <button
           className="w-[320px] h-[64px] bg-[#7C2AE8] text-white text-2xl font-medium rounded-full mb-3 shadow-md hover:bg-[#6a23c8] transition-colors"
-          onClick={() => setShowConsent(true)}
+          onClick={() => router.push("/login")}
         >
           Start Evaluation
         </button>
@@ -53,10 +53,10 @@ export default function Home() {
       </main>
 
       {/* Consent Popup Modal */}
-      {showConsent && (
+      {/* {showConsent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-4xl shadow-lg p-8 w-[320px] relative">
-            {/* Close Button */}
+            {/* Close Button 
             <button
               className="absolute top-4 right-4 bg-[#E6CAFB] text-[#FFFFFF] hover:text-[#E6CAFB] text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#7C2AE8]"
               onClick={() => setShowConsent(false)}
@@ -65,7 +65,7 @@ export default function Home() {
               ×
             </button>
 
-            {/* Content */}
+            {/* Content 
             <div className="mt-2">
               <ul className="text-sm text-gray-700 mb-6 space-y-3 list-disc pl-5 text-left">
                 <li>I understand that my voice will be recorded for research purposes.</li>
@@ -74,19 +74,20 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Button */}
+            {/* Button 
             <button
                className="w-full h-12 bg-[#7C2AE8] text-white text-base font-medium rounded-lg hover:bg-[#6a23c8] transition-colors"
                onClick={() => {
                setShowConsent(false);
                router.push("/login");
-  }}
+            }}
             >
               I AGREE & START
             </button>
           </div>
         </div>
-      )}
+      )} 
+      */}
     </div>
   );
 }
