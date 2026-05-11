@@ -26,11 +26,12 @@ export default function TestStimuliPage() {
     onCloseCallback?: () => void;
   }>({ isOpen: false, title: "", message: "" });
   
-  // Recording states
+  // Recording & Saving states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingStatus, setRecordingStatus] = useState("idle");
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSavingRatings, setIsSavingRatings] = useState(false); // ✅ NEW STATE for saving progress
 
   const getTaskPrompt = () => {
     if (currentTask === 1) return "Last Thursday, I requested a new project task. My boss asked if the finished report was fixed and uploaded. Specifically, I processed the data twice to ensure the results were accurate. If the system crashes again, we might miss the deadline, and the entire business will suffer.";
@@ -186,7 +187,24 @@ export default function TestStimuliPage() {
     }
   };
 
+  // ✅ NEW HELPER: Send current ratings to the backend
+  const saveCurrentRatings = async (currentRatings: Record<string, number>) => {
+    try {
+      const sessionId = localStorage.getItem("audioSessionId");
+      if (!sessionId) return;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      await fetch(`${apiUrl}/api/audio/${sessionId}/ratings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ratings: currentRatings }),
+      });
+    } catch (error) {
+      console.error("Failed to save ratings:", error);
+    }
+  };
+
   const handleNext = async () => {
+    // 1. Ensure all questions are rated before leaving a model page
     if (currentPage > 1) {
       const modelKey = getModelKey();
       const isAllRated = reviewQuestions.every((_, index) => {
@@ -200,6 +218,7 @@ export default function TestStimuliPage() {
       }
     }
 
+    // 2. Stop microphone if it was left on
     if (isRecording) {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
@@ -210,6 +229,7 @@ export default function TestStimuliPage() {
       setIsRecording(false);
     }
 
+    // 3. Audio upload logic for Page 1
     if (currentPage === 1) {
       if (recordingStatus === "uploaded") {
         setCurrentPage(2);
@@ -219,11 +239,20 @@ export default function TestStimuliPage() {
       return; 
     }
 
+    // ✅ 4. IF WE ARE ON PAGE 4 (Last page of the task), SAVE RATINGS TO DB
+    if (currentPage === totalPages) {
+      setIsSavingRatings(true);
+      await saveCurrentRatings(ratings);
+      setIsSavingRatings(false);
+    }
+
+    // 5. Navigate to Next Model, Next Task, or Finish
     if (currentTask === totalTasks && currentPage === totalPages) {
       setShowThankYou(true);
     } else if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     } else if (currentTask < totalTasks) {
+      // Moving to a completely new task: Reset states
       setCurrentTask(currentTask + 1);
       setCurrentPage(1);
       setTranscribedText("");
@@ -283,8 +312,6 @@ export default function TestStimuliPage() {
       }
 
       setRecordingStatus("uploaded");
-
-      // 🚀 INSTANT TRANSITION TO PAGE 2 (NO DELAY)
       setCurrentPage(2);
       
     } catch (error) {
@@ -295,23 +322,9 @@ export default function TestStimuliPage() {
     }
   };
 
-  const handleReturnHome = async () => {
-    try {
-      const sessionId = localStorage.getItem("audioSessionId");
-      if (!sessionId) {
-        router.push("/");
-        return;
-      }
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      await fetch(`${apiUrl}/api/audio/${sessionId}/ratings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ratings: ratings }),
-      });
-      router.push("/");
-    } catch (error) {
-      router.push("/");
-    }
+  const handleReturnHome = () => {
+    // We already saved when they clicked "Next" on the final page, so just route!
+    router.push("/");
   };
 
   const getModelKey = () => {
@@ -350,7 +363,7 @@ export default function TestStimuliPage() {
           <>
             <h1 className="text-4xl font-bold text-black mb-8 text-center mt-12">Thank You!</h1>
             <p className="text-lg text-black text-center mb-8">
-              Thank you for completing all the tasks. Your responses have been recorded.
+              Thank you for completing all the tasks. Your responses have been successfully recorded!
             </p>
             <button
               onClick={handleReturnHome}
@@ -584,12 +597,12 @@ export default function TestStimuliPage() {
 
                 <button
                   onClick={handleNext}
-                  disabled={(currentPage === 1 && isRecording) || (currentPage === 1 && recordingStatus === "idle")}
+                  disabled={isUploading || isTranscribing || isSavingRatings || (currentPage === 1 && isRecording) || (currentPage === 1 && recordingStatus === "idle")}
                   className={`w-32 h-12 bg-[#7C2AE8] text-white text-sm font-bold rounded-xl hover:bg-[#6a23c8] hover:shadow-purple-500/30 transition-all shadow-lg ${
-                    ((currentPage === 1 && isRecording) || (currentPage === 1 && recordingStatus === "idle")) ? "opacity-50 cursor-not-allowed shadow-none" : "hover:-translate-y-0.5"
+                    ((currentPage === 1 && isRecording) || (currentPage === 1 && recordingStatus === "idle") || isSavingRatings) ? "opacity-50 cursor-not-allowed shadow-none" : "hover:-translate-y-0.5"
                   }`}
                 >
-                  Next
+                  {isSavingRatings ? "Saving..." : "Next"}
                 </button>
               </div>
             )}
