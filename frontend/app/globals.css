@@ -25,18 +25,18 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Mobile viewport enforcement - iPhone 14 Pro resolution */
+/* Mobile viewport enforcement */
 @layer base {
   html {
-    width: 390px;
+    width: 100%;
     max-width: 100vw;
     margin: 0 auto;
   }
-  
+
   body {
-    width: 390px;
+    width: 100%;
     max-width: 100vw;
-    min-height: 844px;
+    min-height: 100vh;
     margin: 0 auto;
     overflow-x: hidden;
   }
